@@ -61,7 +61,7 @@ export default function SignUpPage() {
   }
 
   return (
-    <div className="flex min-h-svh w-full items-center justify-center p-6 md:p-10 bg-gradient-to-br from-slate-50 to-slate-100">
+    <div className="flex min-h-screen w-full items-center justify-center p-6 md:p-10 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-[#071528] dark:to-[#081e33]">
       <div className="w-full max-w-sm">
         <div className="flex flex-col gap-6">
           <div className="flex flex-col items-center gap-2 text-center">
@@ -95,6 +95,7 @@ export default function SignUpPage() {
                       required
                       value={formData.businessName}
                       onChange={(e) => setFormData({ ...formData, businessName: e.target.value })}
+                      className="bg-white/90 border border-slate-200 text-slate-900 placeholder:text-slate-400 dark:bg-[#072235] dark:border-[#0b4066] dark:text-[#d9f1ff]"
                     />
                   </div>
                   <div className="grid gap-2">
@@ -106,6 +107,7 @@ export default function SignUpPage() {
                       required
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      className="bg-white/90 border border-slate-200 text-slate-900 placeholder:text-slate-400 dark:bg-[#072235] dark:border-[#0b4066] dark:text-[#d9f1ff]"
                     />
                   </div>
                   <div className="grid gap-2">
@@ -117,6 +119,7 @@ export default function SignUpPage() {
                       required
                       value={formData.phone}
                       onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                      className="bg-white/90 border border-slate-200 text-slate-900 placeholder:text-slate-400 dark:bg-[#072235] dark:border-[#0b4066] dark:text-[#d9f1ff]"
                     />
                   </div>
                   <div className="grid gap-2">
@@ -127,6 +130,7 @@ export default function SignUpPage() {
                       required
                       value={formData.password}
                       onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                      className="bg-white/90 border border-slate-200 text-slate-900 placeholder:text-slate-400 dark:bg-[#072235] dark:border-[#0b4066] dark:text-[#d9f1ff]"
                     />
                   </div>
                   <div className="grid gap-2">
@@ -137,6 +141,7 @@ export default function SignUpPage() {
                       required
                       value={formData.confirmPassword}
                       onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                      className="bg-white/90 border border-slate-200 text-slate-900 placeholder:text-slate-400 dark:bg-[#072235] dark:border-[#0b4066] dark:text-[#d9f1ff]"
                     />
                   </div>
                   {error && <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">{error}</div>}
