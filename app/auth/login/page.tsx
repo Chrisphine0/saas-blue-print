@@ -12,32 +12,32 @@ import { useRouter } from "next/navigation"
 import { useState } from "react"
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const router = useRouter();
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+  const [error, setError] = useState<string | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
+  const router = useRouter()
 
   const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const supabase = createClient();
-    setIsLoading(true);
-    setError(null);
+    e.preventDefault()
+    const supabase = createClient()
+    setIsLoading(true)
+    setError(null)
 
     try {
       const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
-      });
-      if (error) throw error;
-      router.push("/dashboard");
-      router.refresh();
+      })
+      if (error) throw error
+      router.push("/dashboard")
+      router.refresh()
     } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : "An error occurred");
+      setError(error instanceof Error ? error.message : "An error occurred")
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
-  };
+  }
 
   return (
     <div className="flex min-h-svh w-full items-center justify-center p-6 md:p-10 bg-gradient-to-br from-slate-50 to-slate-100">
@@ -45,12 +45,7 @@ export default function LoginPage() {
         <div className="flex flex-col gap-6">
           <div className="flex flex-col items-center gap-2 text-center">
             <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary">
-              <svg
-                className="h-6 w-6 text-primary-foreground"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
+              <svg className="h-6 w-6 text-primary-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -60,16 +55,12 @@ export default function LoginPage() {
               </svg>
             </div>
             <h1 className="text-xl font-semibold">B2B Ordering Platform</h1>
-            <p className="text-sm text-muted-foreground">
-              Manage your wholesale business
-            </p>
+            <p className="text-sm text-muted-foreground">Manage your wholesale business</p>
           </div>
           <Card>
             <CardHeader>
               <CardTitle className="text-2xl">Login</CardTitle>
-              <CardDescription>
-                Enter your credentials to access your supplier dashboard
-              </CardDescription>
+              <CardDescription>Enter your credentials to access your supplier dashboard</CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleLogin}>
@@ -95,21 +86,14 @@ export default function LoginPage() {
                       onChange={(e) => setPassword(e.target.value)}
                     />
                   </div>
-                  {error && (
-                    <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-                      {error}
-                    </div>
-                  )}
+                  {error && <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">{error}</div>}
                   <Button type="submit" className="w-full" disabled={isLoading}>
                     {isLoading ? "Logging in..." : "Login"}
                   </Button>
                 </div>
                 <div className="mt-4 text-center text-sm">
                   Don&apos;t have an account?{" "}
-                  <Link
-                    href="/auth/signup"
-                    className="underline underline-offset-4 hover:text-primary"
-                  >
+                  <Link href="/auth/signup" className="underline underline-offset-4 hover:text-primary">
                     Sign up
                   </Link>
                 </div>
@@ -119,5 +103,5 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
-  );
+  )
 }
