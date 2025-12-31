@@ -25,11 +25,33 @@ export default function LoginPage() {
     setError(null)
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       })
+
       if (error) throw error
+
+      // Prevent buyer accounts from logging in on supplier login page
+      try {
+        const { data: buyerProfile, error: buyerError } = await supabase
+          .from("buyers")
+          .select("user_id")
+          .eq("user_id", data.user.id)
+          .single()
+
+        if (!buyerError && buyerProfile) {
+          // Signed in user has a buyer profile — block supplier login
+          await supabase.auth.signOut()
+          setError("This account is registered as a buyer. Please use the buyer login page.")
+          setIsLoading(false)
+          return
+        }
+      } catch (err) {
+        // If the check fails, allow login to proceed but log for debugging
+        console.error("Error checking buyer profile during supplier login:", err)
+      }
+
       router.push("/dashboard")
       router.refresh()
     } catch (error: unknown) {

@@ -23,6 +23,7 @@ export function ProductGrid({ products, buyerId }: ProductGridProps) {
 
   const addToCart = async (productId: string, minQty: number) => {
     setLoading(productId)
+
     try {
       const supabase = createBrowserClient()
 
@@ -34,7 +35,7 @@ export function ProductGrid({ products, buyerId }: ProductGridProps) {
         },
         {
           onConflict: "buyer_id,product_id",
-        },
+        }
       )
 
       if (error) throw error
@@ -61,7 +62,11 @@ export function ProductGrid({ products, buyerId }: ProductGridProps) {
       const supabase = createBrowserClient()
 
       if (isFavorite) {
-        await supabase.from("buyer_favorites").delete().eq("buyer_id", buyerId).eq("product_id", productId)
+        await supabase
+          .from("buyer_favorites")
+          .delete()
+          .eq("buyer_id", buyerId)
+          .eq("product_id", productId)
       } else {
         await supabase.from("buyer_favorites").insert({
           buyer_id: buyerId,
@@ -87,8 +92,12 @@ export function ProductGrid({ products, buyerId }: ProductGridProps) {
     return (
       <div className="text-center py-12">
         <Package className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-        <h3 className="text-lg font-medium text-gray-900 mb-2">No products found</h3>
-        <p className="text-gray-500">Try adjusting your filters or search query</p>
+        <h3 className="text-lg font-medium text-gray-900 mb-2">
+          No products found
+        </h3>
+        <p className="text-gray-500">
+          Try adjusting your filters or search query
+        </p>
       </div>
     )
   }
@@ -96,16 +105,28 @@ export function ProductGrid({ products, buyerId }: ProductGridProps) {
   return (
     <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
       {products.map((product) => {
-        const inventory = product.inventory?.[0]
-        const isLowStock = inventory ? inventory.quantity_available < inventory.reorder_level : false
-        const isOutOfStock = inventory ? inventory.quantity_available === 0 : true
+        const inventory = product.inventory
+
+        // ✅ Correct stock calculation
+        const availableForSale =
+          inventory
+            ? inventory.quantity_available - inventory.quantity_reserved
+            : 0
+
+        const isOutOfStock = availableForSale <= 0
+        console.log("Product:", product.name, "Available for sale:", availableForSale);
+
+        const isLowStock =
+          inventory &&
+          availableForSale > 0 &&
+          availableForSale <= inventory.reorder_level
 
         return (
           <Card key={product.id} className="overflow-hidden">
             <div className="relative h-48 bg-gray-100">
               {product.images && product.images.length > 0 ? (
                 <Image
-                  src={product.images[0] || "/placeholder.svg"}
+                  src={product.images[0]}
                   alt={product.name}
                   fill
                   className="object-cover"
@@ -116,6 +137,7 @@ export function ProductGrid({ products, buyerId }: ProductGridProps) {
                   <Package className="h-12 w-12 text-gray-300" />
                 </div>
               )}
+
               <button
                 onClick={() => toggleFavorite(product.id, false)}
                 className="absolute top-2 right-2 p-2 bg-white rounded-full shadow-md hover:bg-gray-50"
@@ -129,11 +151,13 @@ export function ProductGrid({ products, buyerId }: ProductGridProps) {
                 <Badge variant="secondary" className="text-xs">
                   {product.category?.name || "Uncategorized"}
                 </Badge>
+
                 {isLowStock && !isOutOfStock && (
                   <Badge variant="outline" className="ml-2 text-xs">
                     Low Stock
                   </Badge>
                 )}
+
                 {isOutOfStock && (
                   <Badge variant="destructive" className="ml-2 text-xs">
                     Out of Stock
@@ -141,25 +165,44 @@ export function ProductGrid({ products, buyerId }: ProductGridProps) {
                 )}
               </div>
 
-              <h3 className="font-semibold text-lg mb-1 line-clamp-1">{product.name}</h3>
-              <p className="text-sm text-gray-600 mb-2">by {product.supplier?.business_name}</p>
+              <h3 className="font-semibold text-lg mb-1 line-clamp-1">
+                {product.name}
+              </h3>
 
-              <p className="text-sm text-gray-500 line-clamp-2 mb-3">{product.description}</p>
+              <p className="text-sm text-gray-600 mb-2">
+                by {product.supplier?.business_name}
+              </p>
+
+              <p className="text-sm text-gray-500 line-clamp-2 mb-3">
+                {product.description}
+              </p>
 
               <div className="flex items-baseline gap-2 mb-2">
-                <span className="text-2xl font-bold text-gray-900">KES {product.price_per_unit.toLocaleString()}</span>
-                <span className="text-sm text-gray-500">/{product.unit_of_measure}</span>
+                <span className="text-2xl font-bold text-gray-900">
+                  KES {product.price_per_unit.toLocaleString()}
+                </span>
+                <span className="text-sm text-gray-500">
+                  /{product.unit_of_measure}
+                </span>
               </div>
 
               <p className="text-xs text-gray-500">
-                Min. Order: {product.min_order_quantity} {product.unit_of_measure}
+                Min. Order: {product.min_order_quantity}{" "}
+                {product.unit_of_measure}
               </p>
-              {inventory && <p className="text-xs text-gray-500">Available: {inventory.quantity_available}</p>}
+
+              {inventory && (
+                <p className="text-xs text-gray-500">
+                  Available: {availableForSale}
+                </p>
+              )}
             </CardContent>
 
             <CardFooter className="p-4 pt-0">
               <Button
-                onClick={() => addToCart(product.id, product.min_order_quantity)}
+                onClick={() =>
+                  addToCart(product.id, product.min_order_quantity)
+                }
                 disabled={isOutOfStock || loading === product.id}
                 className="w-full"
               >

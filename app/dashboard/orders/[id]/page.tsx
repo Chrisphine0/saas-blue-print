@@ -5,8 +5,10 @@ import { Badge } from "@/components/ui/badge"
 import { OrderStatusUpdate } from "@/components/order-status-update"
 import type { Supplier } from "@/lib/types"
 
-export default async function OrderDetailPage({ params }: { params: { id: string } }) {
+export default async function OrderDetailPage({ params }: { params: Promise<{ id: string }> | { id: string } }) {
   const supabase = await createClient()
+  const resolvedParams = await params
+  const id = resolvedParams.id
 
   const {
     data: { user },
@@ -38,7 +40,7 @@ export default async function OrderDetailPage({ params }: { params: { id: string
       )
     `,
     )
-    .eq("id", params.id)
+    .eq("id", id)
     .eq("supplier_id", supplier.id)
     .single()
 
@@ -59,7 +61,7 @@ export default async function OrderDetailPage({ params }: { params: { id: string
       )
     `,
     )
-    .eq("order_id", params.id)
+    .eq("order_id", id)
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -120,19 +122,19 @@ export default async function OrderDetailPage({ params }: { params: { id: string
           <CardContent className="space-y-4">
             <div>
               <p className="text-sm text-muted-foreground">Business Name</p>
-              <p className="font-medium">{order.buyers.business_name}</p>
+              <p className="font-medium">{order.buyers?.business_name ?? "-"}</p>
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Contact Person</p>
-              <p className="font-medium">{order.buyers.contact_person}</p>
+              <p className="font-medium">{order.buyers?.contact_person ?? "-"}</p>
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Phone</p>
-              <p className="font-medium">{order.buyers.phone}</p>
+              <p className="font-medium">{order.buyers?.phone ?? "-"}</p>
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Email</p>
-              <p className="font-medium">{order.buyers.email}</p>
+              <p className="font-medium">{order.buyers?.email ?? "-"}</p>
             </div>
           </CardContent>
         </Card>

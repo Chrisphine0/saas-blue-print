@@ -29,24 +29,45 @@ export function LoginForm() {
         password,
       })
 
-      if (error) throw error
+      if (error) {
+        console.error("Supabase signInWithPassword error:", error)
+        throw error
+      }
 
       // Check if user has a buyer profile
-      const { data: buyer, error: buyerError } = await supabase
-        .from("buyers")
-        .select("*")
-        .eq("user_id", data.user.id)
-        .single()
+        // Check if user has a buyer profile
+        const { data: buyer, error: buyerError } = await supabase.from("buyers").select("*").eq("user_id", data.user.id).single()
 
-      if (buyerError || !buyer) {
-        toast({
-          title: "Access Denied",
-          description: "This account is not registered as a buyer.",
-          variant: "destructive",
-        })
-        await supabase.auth.signOut()
-        return
-      }
+        if (buyerError || !buyer) {
+          // Also check if account is a supplier and show clearer message
+          try {
+            const { data: supplier, error: supplierError } = await supabase
+              .from("suppliers")
+              .select("*")
+              .eq("user_id", data.user.id)
+              .single()
+
+            if (!supplierError && supplier) {
+              toast({
+                title: "Access Denied",
+                description: "This account is registered as a supplier. Please use the supplier login page.",
+                variant: "destructive",
+              })
+              await supabase.auth.signOut()
+              return
+            }
+          } catch (err) {
+            console.error("Error checking supplier profile during buyer login:", err)
+          }
+
+          toast({
+            title: "Access Denied",
+            description: "This account is not registered as a buyer.",
+            variant: "destructive",
+          })
+          await supabase.auth.signOut()
+          return
+        }
 
       toast({
         title: "Welcome back!",
@@ -56,9 +77,10 @@ export function LoginForm() {
       router.push("/buyer/dashboard")
       router.refresh()
     } catch (error: any) {
+      console.error("Login error (client):", error)
       toast({
         title: "Login Failed",
-        description: error.message,
+        description: error?.message || "Unknown error",
         variant: "destructive",
       })
     } finally {

@@ -30,7 +30,6 @@ export function OrderStatusUpdate({ order }: OrderStatusUpdateProps) {
 
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault()
-    const supabase = createClient()
     setIsLoading(true)
     setError(null)
 
@@ -50,13 +49,18 @@ export function OrderStatusUpdate({ order }: OrderStatusUpdateProps) {
         updateData.actual_delivery_date = formData.actualDeliveryDate
       }
 
-      const { error: updateError } = await supabase.from("orders").update(updateData).eq("id", order.id)
+      const res = await fetch("/api/update-order", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderId: order.id, update: updateData }),
+      })
 
-      if (updateError) throw updateError
+      const data = await res.json()
+      if (!res.ok) throw data
 
       router.refresh()
     } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : "An error occurred")
+      setError(error instanceof Error ? error.message : JSON.stringify(error))
     } finally {
       setIsLoading(false)
     }
@@ -67,24 +71,22 @@ export function OrderStatusUpdate({ order }: OrderStatusUpdateProps) {
   const handleCancelOrder = async () => {
     if (!confirm("Are you sure you want to cancel this order?")) return
 
-    const supabase = createClient()
     setIsLoading(true)
     setError(null)
 
     try {
-      const { error: updateError } = await supabase
-        .from("orders")
-        .update({
-          status: "cancelled",
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", order.id)
+      const res = await fetch("/api/update-order", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderId: order.id, update: { status: "cancelled", updated_at: new Date().toISOString() } }),
+      })
 
-      if (updateError) throw updateError
+      const data = await res.json()
+      if (!res.ok) throw data
 
       router.refresh()
     } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : "An error occurred")
+      setError(error instanceof Error ? error.message : JSON.stringify(error))
     } finally {
       setIsLoading(false)
     }

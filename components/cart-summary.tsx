@@ -55,67 +55,21 @@ export function CartSummary({ items, buyer }: CartSummaryProps) {
 
     setLoading(true)
     try {
-      const supabase = createBrowserClient()
+      const res = await fetch("/api/create-order", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          items,
+          buyerId: buyer.id,
+          paymentMethod,
+          deliveryAddress,
+          deliveryCity,
+          notes,
+        }),
+      })
 
-      // Create orders for each supplier
-      for (const [supplierId, supplierData] of Object.entries(itemsBySupplier)) {
-        const supplierTotal = supplierData.items.reduce(
-          (sum, item) => sum + item.product.price_per_unit * item.quantity,
-          0,
-        )
-
-        // Create order
-        const { data: order, error: orderError } = await supabase
-          .from("orders")
-          .insert({
-            buyer_id: buyer.id,
-            supplier_id: supplierId,
-            total_amount: supplierTotal,
-            payment_method: paymentMethod,
-            delivery_address: deliveryAddress,
-            delivery_city: deliveryCity,
-            notes: notes,
-            status: "pending",
-            payment_status: "pending",
-          })
-          .select()
-          .single()
-
-        if (orderError) throw orderError
-
-        // Create order items
-        const orderItems = supplierData.items.map((item) => ({
-          order_id: order.id,
-          product_id: item.product_id,
-          quantity: item.quantity,
-          unit_price: item.product.price_per_unit,
-          subtotal: item.product.price_per_unit * item.quantity,
-        }))
-
-        const { error: itemsError } = await supabase.from("order_items").insert(orderItems)
-
-        if (itemsError) throw itemsError
-
-        // Update inventory (reserve stock)
-        for (const item of supplierData.items) {
-          const inventory = item.product.inventory?.[0]
-          if (inventory) {
-            const { error: inventoryError } = await supabase
-              .from("inventory")
-              .update({
-                quantity_reserved: inventory.quantity_reserved + item.quantity,
-              })
-              .eq("product_id", item.product_id)
-
-            if (inventoryError) throw inventoryError
-          }
-        }
-      }
-
-      // Clear cart
-      const { error: clearError } = await supabase.from("cart_items").delete().eq("buyer_id", buyer.id)
-
-      if (clearError) throw clearError
+      const data = await res.json()
+      if (!res.ok) throw data
 
       toast({
         title: "Order placed successfully!",
@@ -125,9 +79,10 @@ export function CartSummary({ items, buyer }: CartSummaryProps) {
       router.push("/buyer/dashboard/orders")
       router.refresh()
     } catch (error: any) {
+      console.error("checkout client error", error)
       toast({
         title: "Checkout failed",
-        description: error.message,
+        description: error?.message || "An error occurred",
         variant: "destructive",
       })
     } finally {

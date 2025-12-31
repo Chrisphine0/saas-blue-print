@@ -47,19 +47,33 @@ export function BuyerSignupForm() {
         throw new Error("Failed to create user")
       }
 
-      // Create buyer profile
-      const { error: buyerError } = await supabase.from("buyers").insert({
-        user_id: authData.user.id,
-        business_name: formData.businessName,
-        contact_person: formData.contactPerson,
-        phone: formData.phone,
-        email: formData.email,
-        address: formData.address,
-        city: formData.city,
-        status: "pending",
+      // Create buyer profile on the server (service role) because signUp
+      // may not return an authenticated session immediately (email confirmation).
+      const createRes = await fetch("/api/create-buyer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          user_id: authData.user.id,
+          business_name: formData.businessName,
+          contact_person: formData.contactPerson,
+          phone: formData.phone,
+          email: formData.email,
+          address: formData.address,
+          city: formData.city,
+          status: "pending",
+        }),
       })
 
-      if (buyerError) throw buyerError
+      if (!createRes.ok) {
+        let errBody: any
+        try {
+          errBody = await createRes.json()
+        } catch (e) {
+          errBody = await createRes.text()
+        }
+        console.error("Create-buyer API error:", createRes.status, errBody)
+        throw new Error(errBody?.error || JSON.stringify(errBody) || "Failed to create buyer profile")
+      }
 
       toast({
         title: "Account Created!",

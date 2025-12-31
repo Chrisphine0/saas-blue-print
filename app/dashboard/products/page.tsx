@@ -91,32 +91,35 @@ export default async function ProductsPage() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Price per {product.unit_of_measure}</p>
-                    <p className="text-lg font-semibold">KES {Number(product.price_per_unit).toLocaleString()}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Stock Available</p>
-                    <p
-                      className={`text-lg font-semibold ${
-                        product.inventory?.[0]?.quantity_available <= product.inventory?.[0]?.reorder_level
-                          ? "text-destructive"
-                          : ""
-                      }`}
-                    >
-                      {product.inventory?.[0]?.quantity_available || 0} {product.unit_of_measure}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Min Order Qty</p>
-                    <p className="text-lg font-semibold">{product.min_order_quantity}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Lead Time</p>
-                    <p className="text-lg font-semibold">{product.lead_time_days} days</p>
-                  </div>
-                </div>
+                {(() => {
+                  // inventory may come back as an array (relationship) or as an object
+                  const invItem = Array.isArray(product.inventory) ? product.inventory[0] : product.inventory
+                  const available = Number(invItem?.quantity_available ?? 0)
+                  const reorderLevel = Number(invItem?.reorder_level ?? 0)
+
+                  return (
+                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                      <div>
+                        <p className="text-sm text-muted-foreground">Price per {product.unit_of_measure}</p>
+                        <p className="text-lg font-semibold">KES {Number(product.price_per_unit).toLocaleString()}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Stock Available</p>
+                        <p className={`text-lg font-semibold ${available <= reorderLevel ? "text-destructive" : ""}`}>
+                          {available} {product.unit_of_measure}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Min Order Qty</p>
+                        <p className="text-lg font-semibold">{product.min_order_quantity}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Lead Time</p>
+                        <p className="text-lg font-semibold">{product.lead_time_days} days</p>
+                      </div>
+                    </div>
+                  )
+                })()}
 
                 {product.description && (
                   <p className="mt-4 text-sm text-muted-foreground line-clamp-2">{product.description}</p>
