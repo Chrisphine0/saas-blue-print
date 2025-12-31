@@ -114,7 +114,7 @@ export function ProductGrid({ products, buyerId }: ProductGridProps) {
             : 0
 
         const isOutOfStock = availableForSale <= 0
-        console.log("Product:", product.name, "Available for sale:", availableForSale);
+        // console.log("Product:", product.name, "Available for sale:", availableForSale);
 
         const isLowStock =
           inventory &&

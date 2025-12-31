@@ -79,7 +79,7 @@ export function CartSummary({ items, buyer }: CartSummaryProps) {
       router.push("/buyer/dashboard/orders")
       router.refresh()
     } catch (error: any) {
-      console.error("checkout client error", error)
+      // console.error("checkout client error", error)
       toast({
         title: "Checkout failed",
         description: error?.message || "An error occurred",
