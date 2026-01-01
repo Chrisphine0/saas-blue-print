@@ -30,44 +30,97 @@ export function LoginForm() {
       })
 
       if (error) {
-        console.error("Supabase signInWithPassword error:", error)
-        throw error
+        toast({
+          title: "Login Failed",
+          description: error.message || "Unable to sign in. Please check your credentials.",
+          variant: "destructive",
+        })
+        setLoading(false)
+        return
       }
 
+      if (!data || !data.user) {
+        toast({
+          title: "Login Failed",
+          description: "No user data returned. Please try again.",
+          variant: "destructive",
+        })
+        try {
+          await supabase.auth.signOut()
+        } catch (_) {}
+        setLoading(false)
+        return
+      }
+
+      const userId = data.user.id
+
       // Check if user has a buyer profile
-        // Check if user has a buyer profile
-        const { data: buyer, error: buyerError } = await supabase.from("buyers").select("*").eq("user_id", data.user.id).single()
+      let buyer: any = null
+      try {
+        const res = await supabase
+          .from("buyers")
+          .select("*")
+          .eq("user_id", userId)
+          .single()
+        buyer = res.data
+        // If the client returns an error object, treat as missing buyer
+        if (res.error) {
+          buyer = null
+        }
+      } catch (err) {
+        // Network or fetch-level error: show a user-friendly toast and stop flow
+        toast({
+          title: "Login Failed",
+          description: "Unable to verify account type. If you're a supplier, please use the supplier login.",
+          variant: "destructive",
+        })
+        try {
+          await supabase.auth.signOut()
+        } catch (_) {}
+        setLoading(false)
+        return
+      }
 
-        if (buyerError || !buyer) {
-          // Also check if account is a supplier and show clearer message
-          try {
-            const { data: supplier, error: supplierError } = await supabase
-              .from("suppliers")
-              .select("*")
-              .eq("user_id", data.user.id)
-              .single()
+      if (!buyer) {
+        // Also check if account is a supplier and show clearer message
+        try {
+          const { data: supplier, error: supplierError } = await supabase
+            .from("suppliers")
+            .select("*")
+            .eq("user_id", userId)
+            .single()
 
-            if (!supplierError && supplier) {
-              toast({
-                title: "Access Denied",
-                description: "This account is registered as a supplier. Please use the supplier login page.",
-                variant: "destructive",
-              })
+          if (!supplierError && supplier) {
+            toast({
+              title: "Access Denied",
+              description: "This account is registered as a supplier. Please use the supplier login page.",
+              variant: "destructive",
+            })
+            try {
               await supabase.auth.signOut()
-              return
-            }
-          } catch (err) {
+            } catch (_) {}
+            setLoading(false)
+            return
+          }
+        } catch (err) {
+          if (process.env.NODE_ENV === "development") {
+            // Keep developer logs in dev only
+            // eslint-disable-next-line no-console
             console.error("Error checking supplier profile during buyer login:", err)
           }
-
-          toast({
-            title: "Access Denied",
-            description: "This account is not registered as a buyer.",
-            variant: "destructive",
-          })
-          await supabase.auth.signOut()
-          return
         }
+
+        toast({
+          title: "Access Denied",
+          description: "This account is not registered as a buyer.",
+          variant: "destructive",
+        })
+        try {
+          await supabase.auth.signOut()
+        } catch (_) {}
+        setLoading(false)
+        return
+      }
 
       toast({
         title: "Welcome back!",
@@ -77,7 +130,10 @@ export function LoginForm() {
       router.push("/buyer/dashboard")
       router.refresh()
     } catch (error: any) {
-      console.error("Login error (client):", error)
+      if (process.env.NODE_ENV === "development") {
+        // eslint-disable-next-line no-console
+        console.error("Login error (client):", error)
+      }
       toast({
         title: "Login Failed",
         description: error?.message || "Unknown error",

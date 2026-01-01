@@ -17,7 +17,17 @@ export default async function InventoryPage() {
     redirect("/auth/login")
   }
 
-  const { data: supplier } = await supabase.from("suppliers").select("*").eq("user_id", user.id).single<Supplier>()
+  const supplierRes = await supabase.from("suppliers").select("*").eq("user_id", user.id).single<Supplier>()
+  const supplier = (supplierRes as any).data
+  const supplierError = (supplierRes as any).error
+  const supplierStatus = (supplierRes as any).status
+
+  if (supplierError) {
+    if (supplierStatus === 406) {
+      redirect("/auth/login")
+    }
+    // treat other errors as missing supplier
+  }
 
   if (!supplier) {
     redirect("/onboarding")
@@ -50,8 +60,12 @@ export default async function InventoryPage() {
       {inventory && inventory.length > 0 ? (
         <div className="grid gap-4">
           {inventory.map((item: any) => {
-            const isLowStock = item.quantity_available <= item.reorder_level
-            const stockPercentage = (item.quantity_available / (item.reorder_level * 2)) * 100
+            const rawAvailable = Number(item.quantity_available) || 0
+            const reserved = Number(item.quantity_reserved) || 0
+            const available = Math.max(0, rawAvailable - reserved)
+            const reorderLevel = Number(item.reorder_level) || 0
+            const isLowStock = available <= reorderLevel
+            const stockPercentage = (available / Math.max(1, reorderLevel * 2)) * 100
 
             return (
               <Card key={item.id}>
@@ -81,7 +95,7 @@ export default async function InventoryPage() {
                     <div>
                       <p className="text-sm text-muted-foreground">Available</p>
                       <p className={`text-2xl font-bold ${isLowStock ? "text-destructive" : ""}`}>
-                        {item.quantity_available} {item.products?.unit_of_measure}
+                        {available} {item.products?.unit_of_measure}
                       </p>
                     </div>
                     <div>

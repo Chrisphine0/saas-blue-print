@@ -18,6 +18,13 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
 
+  // Normalize and set error messages from unknown values
+  const setErrorMessage = (err: unknown) => {
+    const message =
+      err instanceof Error ? err.message : typeof err === "string" && err ? err : "An error occurred"
+    setError(message)
+  }
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     const supabase = createClient()
@@ -48,21 +55,24 @@ export default function LoginPage() {
           return
         }
       } catch (err) {
-        // If the check fails, allow login to proceed but log for debugging
-        console.error("Error checking buyer profile during supplier login:", err)
+        // If the check fails, allow login to proceed but only log in development
+        if (process.env.NODE_ENV === "development") {
+          // eslint-disable-next-line no-console
+          console.error("Error checking buyer profile during supplier login:", err)
+        }
       }
 
       router.push("/dashboard")
       router.refresh()
     } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : "An error occurred")
+      setErrorMessage(error)
     } finally {
       setIsLoading(false)
     }
   }
 
   return (
-    <div className="flex min-h-screen w-full items-center justify-center p-6 md:p-10 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-[#071528] dark:to-[#081e33]">
+    <div className="flex min-h-screen w-full items-center justify-center p-6 md:p-10">
       <div className="w-full max-w-sm">
         <div className="flex flex-col gap-6">
           <div className="flex flex-col items-center gap-2 text-center">
@@ -81,7 +91,7 @@ export default function LoginPage() {
           </div>
           <Card>
             <CardHeader>
-              <CardTitle className="text-2xl">Login</CardTitle>
+              <CardTitle className="text-2xl items-center text-center">Login</CardTitle>
               <CardDescription>Enter your credentials to access your supplier dashboard</CardDescription>
             </CardHeader>
             <CardContent>

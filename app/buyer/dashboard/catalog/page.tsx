@@ -32,7 +32,17 @@ export default async function CatalogPage({ searchParams }: PageProps) {
     redirect("/buyer/auth/login")
   }
 
-  const { data: buyer } = await supabase.from("buyers").select("*").eq("user_id", user.id).single()
+  const buyerRes = await supabase.from("buyers").select("*").eq("user_id", user.id).single()
+  const buyer = (buyerRes as any).data
+  const buyerError = (buyerRes as any).error
+  const buyerStatus = (buyerRes as any).status
+
+  if (buyerError) {
+    if (buyerStatus === 406) {
+      redirect("/buyer/auth/login")
+    }
+    // treat other errors as missing buyer
+  }
 
   if (!buyer) {
     redirect("/buyer/auth/login")

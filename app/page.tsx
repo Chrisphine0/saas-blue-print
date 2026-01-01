@@ -26,9 +26,9 @@ export default function HomePage() {
             <Button variant="ghost" asChild>
               <Link href="/buyer/auth/login">Buyer Login</Link>
             </Button>
-            <Button asChild>
+            {/* <Button asChild>
               <Link href="/auth/signup">Get Started</Link>
-            </Button>
+            </Button> */}
           </div>
         </div>
       </header>

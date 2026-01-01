@@ -61,7 +61,7 @@ export default function SignUpPage() {
   }
 
   return (
-    <div className="flex min-h-screen w-full items-center justify-center p-6 md:p-10 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-[#071528] dark:to-[#081e33]">
+    <div className="flex min-h-screen w-full items-center justify-center p-6 md:p-10">
       <div className="w-full max-w-sm">
         <div className="flex flex-col gap-6">
           <div className="flex flex-col items-center gap-2 text-center">
@@ -80,7 +80,7 @@ export default function SignUpPage() {
           </div>
           <Card>
             <CardHeader>
-              <CardTitle className="text-2xl">Create Supplier Account</CardTitle>
+              <CardTitle className="text-2xl items-center text-center">Create Supplier Account</CardTitle>
               <CardDescription>Register your business to start managing orders</CardDescription>
             </CardHeader>
             <CardContent>

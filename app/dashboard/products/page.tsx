@@ -17,7 +17,16 @@ export default async function ProductsPage() {
     redirect("/auth/login")
   }
 
-  const { data: supplier } = await supabase.from("suppliers").select("*").eq("user_id", user.id).single<Supplier>()
+  const supplierRes = await supabase.from("suppliers").select("*").eq("user_id", user.id).single<Supplier>()
+  const supplier = (supplierRes as any).data
+  const supplierError = (supplierRes as any).error
+  const supplierStatus = (supplierRes as any).status
+
+  if (supplierError) {
+    if (supplierStatus === 406) {
+      redirect("/auth/login")
+    }
+  }
 
   if (!supplier) {
     redirect("/onboarding")
@@ -94,7 +103,10 @@ export default async function ProductsPage() {
                 {(() => {
                   // inventory may come back as an array (relationship) or as an object
                   const invItem = Array.isArray(product.inventory) ? product.inventory[0] : product.inventory
-                  const available = Number(invItem?.quantity_available ?? 0)
+                  const rawAvailable = Number(invItem?.quantity_available ?? 0)
+                  const reserved = Number(invItem?.quantity_reserved ?? 0)
+                  // Display available stock accounting for reserved quantities.
+                  const available = Math.max(0, rawAvailable - reserved)
                   const reorderLevel = Number(invItem?.reorder_level ?? 0)
 
                   return (

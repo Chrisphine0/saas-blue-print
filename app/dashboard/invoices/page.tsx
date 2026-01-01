@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Eye, DollarSign, FileText, AlertCircle } from "lucide-react"
 import Link from "next/link"
 import { formatDistanceToNow } from "date-fns"
+import { redirect } from "next/navigation"
 
 export default async function SupplierInvoicesPage() {
   const supabase = await createServerClient()
@@ -17,7 +18,16 @@ export default async function SupplierInvoicesPage() {
     return null
   }
 
-  const { data: supplier } = await supabase.from("suppliers").select("*").eq("user_id", user.id).single()
+  const supplierRes = await supabase.from("suppliers").select("*").eq("user_id", user.id).single()
+  const supplier = (supplierRes as any).data
+  const supplierError = (supplierRes as any).error
+  const supplierStatus = (supplierRes as any).status
+
+  if (supplierError) {
+    if (supplierStatus === 406) {
+      redirect("/auth/login")
+    }
+  }
 
   if (!supplier) {
     return null

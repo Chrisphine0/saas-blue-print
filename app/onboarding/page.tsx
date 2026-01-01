@@ -22,6 +22,7 @@ export default function OnboardingPage() {
   })
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [initializing, setInitializing] = useState(true)
   const router = useRouter()
 
   useEffect(() => {
@@ -31,6 +32,43 @@ export default function OnboardingPage() {
       const {
         data: { user },
       } = await supabase.auth.getUser()
+      // Redirect to login if not authenticated
+      if (!user) {
+        router.push("/auth/login")
+        return
+      }
+
+      // If the user already has a supplier profile, send them to the dashboard
+      try {
+        const supplierRes = await supabase.from("suppliers").select("*").eq("user_id", user.id).single()
+        const supplier = (supplierRes as any).data
+        const supplierError = (supplierRes as any).error
+        const supplierStatus = (supplierRes as any).status
+
+        if (supplierError) {
+          // If Supabase REST returned a 406 (Not Acceptable) treat this as an auth/session issue
+          if (supplierStatus === 406) {
+            try {
+              await supabase.auth.signOut()
+            } catch (_) {}
+            router.push("/auth/login")
+            return
+          }
+          // otherwise treat as no supplier and continue
+        }
+
+        if (supplier) {
+          router.push("/dashboard")
+          return
+        }
+      } catch (err) {
+        // If the fetch itself failed, sign out and redirect to login to avoid leaving the user on a broken page
+        try {
+          await supabase.auth.signOut()
+        } catch (_) {}
+        router.push("/auth/login")
+        return
+      }
 
       if (user?.user_metadata) {
         setFormData((prev) => ({
@@ -39,6 +77,7 @@ export default function OnboardingPage() {
           phone: user.user_metadata.phone || "",
         }))
       }
+      setInitializing(false)
     }
 
     loadUserData()
@@ -87,6 +126,16 @@ export default function OnboardingPage() {
   return (
     <div className="flex min-h-svh w-full items-center justify-center p-6 bg-gradient-to-br from-slate-50 to-slate-100">
       <div className="w-full max-w-2xl">
+        {initializing ? (
+          <div className="rounded-lg bg-white p-8 shadow">
+            <div className="h-6 w-48 bg-gray-200 rounded animate-pulse mb-4" />
+            <div className="space-y-3">
+              <div className="h-4 bg-gray-200 rounded animate-pulse" />
+              <div className="h-4 bg-gray-200 rounded animate-pulse w-5/6" />
+              <div className="h-10 bg-gray-200 rounded animate-pulse" />
+            </div>
+          </div>
+        ) : (
         <Card>
           <CardHeader>
             <CardTitle className="text-2xl">Complete Your Supplier Profile</CardTitle>
@@ -171,6 +220,7 @@ export default function OnboardingPage() {
             </form>
           </CardContent>
         </Card>
+        )}
       </div>
     </div>
   )

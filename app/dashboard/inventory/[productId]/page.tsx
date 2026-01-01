@@ -16,7 +16,16 @@ export default async function ManageStockPage({ params }: { params: Promise<{ pr
     redirect("/auth/login")
   }
 
-  const { data: supplier } = await supabase.from("suppliers").select("*").eq("user_id", user.id).single<Supplier>()
+  const supplierRes = await supabase.from("suppliers").select("*").eq("user_id", user.id).single<Supplier>()
+  const supplier = (supplierRes as any).data
+  const supplierError = (supplierRes as any).error
+  const supplierStatus = (supplierRes as any).status
+
+  if (supplierError) {
+    if (supplierStatus === 406) {
+      redirect("/auth/login")
+    }
+  }
 
   if (!supplier) {
     redirect("/onboarding")

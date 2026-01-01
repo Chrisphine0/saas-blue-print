@@ -46,25 +46,7 @@ export default async function BuyerDashboardPage() {
               <h1 className="text-2xl font-bold text-gray-900">{buyer.business_name}</h1>
               <p className="text-sm text-gray-500">{buyer.contact_person}</p>
             </div>
-             <nav className="mt-2">
-            <div className="flex items-center space-x-4 text-sm">
-              <Link href="/buyer/dashboard" className="text-gray-700 hover:text-gray-900">
-                Overview
-              </Link>
-              <Link href="/buyer/dashboard/catalog" className="text-gray-700 hover:text-gray-900">
-                Catalog
-              </Link>
-              <Link href="/buyer/dashboard/orders" className="text-gray-700 hover:text-gray-900">
-                Orders
-              </Link>
-              <Link href="/buyer/dashboard/favorites" className="text-gray-700 hover:text-gray-900">
-                Favorites
-              </Link>
-              <Link href="/buyer/dashboard/reorder-alerts" className="text-gray-700 hover:text-gray-900">
-                Reorder Alerts
-              </Link>
-            </div>
-          </nav>
+           
             <div className="flex items-center gap-4">
               <Button asChild variant="outline">
                 <Link href="/buyer/dashboard/catalog">Browse Products</Link>

@@ -15,7 +15,16 @@ export default async function SupplierReviewsPage() {
     return null
   }
 
-  const { data: supplier } = await supabase.from("suppliers").select("*").eq("user_id", user.id).single()
+  const supplierRes = await supabase.from("suppliers").select("*").eq("user_id", user.id).single()
+  const supplier = (supplierRes as any).data
+  const supplierError = (supplierRes as any).error
+  const supplierStatus = (supplierRes as any).status
+
+  if (supplierError) {
+    if (supplierStatus === 406) {
+      redirect("/auth/login")
+    }
+  }
 
   if (!supplier) {
     return null
