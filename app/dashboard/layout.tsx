@@ -1,3 +1,6 @@
+// app/dashboard/layout.tsx - mobile-friendly supplier dashboard layout
+// "use client"
+
 import type React from "react"
 import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
@@ -38,14 +41,19 @@ export default async function DashboardLayout({
   }
 
   return (
-    <div className="flex min-h-screen">
-      {/* Sidebar */}
-      <aside className="hidden w-64 border-r bg-muted/40 lg:block">
+    <div className="flex min-h-screen flex-col lg:flex-row">
+      {/* Sidebar for large screens */}
+      <aside className="hidden lg:flex lg:w-64 lg:flex-col lg:border-r lg:bg-muted/40">
         <div className="flex h-full flex-col">
           <div className="flex h-16 items-center border-b px-6">
             <div className="flex items-center gap-2">
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-                <svg className="h-5 w-5 text-primary-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg
+                  className="h-5 w-5 text-primary-foreground"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -66,7 +74,14 @@ export default async function DashboardLayout({
       {/* Main Content */}
       <div className="flex flex-1 flex-col">
         <DashboardHeader supplier={supplier} />
-        <main className="flex-1 overflow-auto p-6">{children}</main>
+        <main className="flex-1 overflow-auto p-4 lg:p-6">{children}</main>
+      </div>
+
+      {/* Bottom navigation for mobile */}
+      <div className="fixed bottom-0 left-0 right-0 z-50 border-t bg-background lg:hidden">
+        <div className="px-2">
+          <DashboardNav />
+        </div>
       </div>
     </div>
   )

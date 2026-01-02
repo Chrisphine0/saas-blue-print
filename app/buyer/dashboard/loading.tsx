@@ -6,7 +6,7 @@ export default function LoginLoading() {
           className="h-10 w-10 rounded-full border-4 border-t-primary border-slate-200 animate-spin"
           aria-hidden="true"
         />
-        <div className="text-sm text-muted-foreground">Loading login…</div>
+        <div className="text-sm text-muted-foreground">Please Wait...</div>
       </div>
     </div>
   )

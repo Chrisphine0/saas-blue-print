@@ -13,9 +13,13 @@ export function OrdersList({ orders }: OrdersListProps) {
   if (orders.length === 0) {
     return (
       <div className="text-center py-12 bg-white rounded-lg">
-        <Package className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-        <h3 className="text-lg font-medium text-gray-900 mb-2">No orders found</h3>
-        <p className="text-gray-500">Orders will appear here once you place them</p>
+        <Package className="mx-auto h-10 w-10 text-gray-400 mb-3" />
+        <h3 className="text-base font-medium text-gray-900 mb-1">
+          No orders found
+        </h3>
+        <p className="text-sm text-gray-500">
+          Orders will appear here once you place them
+        </p>
       </div>
     )
   }
@@ -58,16 +62,25 @@ export function OrdersList({ orders }: OrdersListProps) {
     <div className="space-y-4">
       {orders.map((order) => (
         <Card key={order.id}>
-          <CardContent className="p-6">
-            <div className="flex items-start justify-between">
+          <CardContent className="p-4 sm:p-6">
+            <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+              {/* Left Content */}
               <div className="flex-1">
-                <div className="flex items-center gap-3 mb-2">
-                  <h3 className="text-lg font-semibold">{order.order_number}</h3>
-                  <Badge className={getStatusColor(order.status)}>{order.status}</Badge>
-                  <Badge className={getPaymentStatusColor(order.payment_status)}>{order.payment_status}</Badge>
+                {/* Header */}
+                <div className="flex flex-wrap items-center gap-2 mb-3">
+                  <h3 className="text-base sm:text-lg font-semibold">
+                    {order.order_number}
+                  </h3>
+                  <Badge className={getStatusColor(order.status)}>
+                    {order.status}
+                  </Badge>
+                  <Badge className={getPaymentStatusColor(order.payment_status)}>
+                    {order.payment_status}
+                  </Badge>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4 text-sm text-gray-600">
+                {/* Details */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm text-gray-600">
                   <div>
                     <p className="font-medium">Supplier</p>
                     <p>{order.supplier?.business_name}</p>
@@ -80,7 +93,9 @@ export function OrdersList({ orders }: OrdersListProps) {
 
                   <div>
                     <p className="font-medium">Total Amount</p>
-                    <p className="text-lg font-bold text-gray-900">KES {Number(order.total_amount).toLocaleString()}</p>
+                    <p className="text-base sm:text-lg font-bold text-gray-900">
+                      KES {Number(order.total_amount).toLocaleString()}
+                    </p>
                   </div>
 
                   <div>
@@ -93,25 +108,36 @@ export function OrdersList({ orders }: OrdersListProps) {
                   {order.expected_delivery_date && (
                     <div>
                       <p className="font-medium">Expected Delivery</p>
-                      <p>{new Date(order.expected_delivery_date).toLocaleDateString()}</p>
+                      <p>
+                        {new Date(order.expected_delivery_date).toLocaleDateString()}
+                      </p>
                     </div>
                   )}
 
                   {order.payment_method && (
                     <div>
                       <p className="font-medium">Payment Method</p>
-                      <p className="capitalize">{order.payment_method.replace("_", " ")}</p>
+                      <p className="capitalize">
+                        {order.payment_method.replace("_", " ")}
+                      </p>
                     </div>
                   )}
                 </div>
               </div>
 
-              <Button asChild variant="outline">
-                <Link href={`/buyer/dashboard/orders/${order.id}`}>
-                  View Details
-                  <ChevronRight className="ml-2 h-4 w-4" />
-                </Link>
-              </Button>
+              {/* Action */}
+              <div className="md:self-start">
+                <Button
+                  asChild
+                  variant="outline"
+                  className="w-full md:w-auto"
+                >
+                  <Link href={`/buyer/dashboard/orders/${order.id}`}>
+                    View Details
+                    <ChevronRight className="ml-2 h-4 w-4" />
+                  </Link>
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>

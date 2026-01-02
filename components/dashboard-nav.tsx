@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
@@ -89,25 +88,50 @@ export function DashboardNav() {
   const pathname = usePathname()
 
   return (
-    <nav className="flex flex-col gap-1">
-      {navItems.map((item) => {
-        const isActive = pathname === item.href
-        return (
-          <Link
-            key={item.href}
-            href={item.href}
-            className={cn(
-              "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-              isActive
-                ? "bg-primary text-primary-foreground"
-                : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
-            )}
-          >
-            {item.icon}
-            {item.title}
-          </Link>
-        )
-      })}
-    </nav>
+    <>
+      {/* Sidebar for large screens */}
+      <aside className="hidden lg:flex lg:flex-col lg:gap-1 lg:w-56 lg:sticky lg:top-0 lg:h-screen lg:p-3">
+        {navItems.map((item) => {
+          const isActive = pathname === item.href
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={cn(
+                "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                isActive
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
+              )}
+            >
+              {item.icon}
+              {item.title}
+            </Link>
+          )
+        })}
+      </aside>
+
+      {/* Bottom nav for mobile */}
+      <nav className="fixed bottom-0 left-0 right-0 z-50 flex justify-between border-t bg-background px-2 py-1 lg:hidden">
+        {navItems.map((item) => {
+          const isActive = pathname === item.href
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={cn(
+                "flex flex-col items-center justify-center flex-1 py-2 text-xs transition-colors",
+                isActive
+                  ? "text-primary"
+                  : "text-muted-foreground hover:text-primary",
+              )}
+            >
+              <div className="h-5 w-5">{item.icon}</div>
+              <span className="mt-1 truncate">{item.title}</span>
+            </Link>
+          )
+        })}
+      </nav>
+    </>
   )
 }

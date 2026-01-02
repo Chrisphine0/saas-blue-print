@@ -33,7 +33,6 @@ export default async function OrdersPage() {
     redirect("/onboarding")
   }
 
-  // Get all orders
   const { data: allOrders } = await supabase
     .from("orders")
     .select(
@@ -50,7 +49,6 @@ export default async function OrdersPage() {
     .eq("supplier_id", supplier.id)
     .order("created_at", { ascending: false })
 
-  // Filter orders by status
   const pendingOrders = allOrders?.filter((o: any) => o.status === "pending") || []
   const confirmedOrders = allOrders?.filter((o: any) => o.status === "confirmed") || []
   const processingOrders = allOrders?.filter((o: any) => o.status === "processing") || []
@@ -93,14 +91,14 @@ export default async function OrdersPage() {
 
   const OrderCard = ({ order }: { order: any }) => (
     <Card>
-      <CardContent className="p-6">
-        <div className="flex items-start justify-between mb-4">
+      <CardContent className="p-4 sm:p-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-2">
           <div>
             <h3 className="text-lg font-semibold">{order.order_number}</h3>
             <p className="text-sm text-muted-foreground">{order.buyers?.business_name}</p>
             <p className="text-xs text-muted-foreground">{new Date(order.created_at).toLocaleDateString()}</p>
           </div>
-          <div className="flex flex-col gap-2 items-end">
+          <div className="flex flex-row sm:flex-col gap-2 items-start sm:items-end">
             <Badge className={getStatusColor(order.status)} variant="outline">
               {order.status}
             </Badge>
@@ -110,7 +108,7 @@ export default async function OrdersPage() {
           </div>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <p className="text-sm text-muted-foreground">Contact Person</p>
             <p className="font-medium">{order.buyers?.contact_person}</p>
@@ -127,11 +125,11 @@ export default async function OrdersPage() {
           </div>
           <div>
             <p className="text-sm text-muted-foreground">Total Amount</p>
-            <p className="text-xl font-bold">KES {Number(order.total_amount).toLocaleString()}</p>
+            <p className="font-bold text-lg sm:text-xl">KES {Number(order.total_amount).toLocaleString()}</p>
           </div>
         </div>
 
-        <div className="mt-4 flex gap-2">
+        <div className="mt-4 flex flex-wrap gap-2">
           <Button size="sm" asChild>
             <Link href={`/dashboard/orders/${order.id}`}>View Details</Link>
           </Button>
@@ -141,14 +139,15 @@ export default async function OrdersPage() {
   )
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 px-4 sm:px-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Orders</h1>
-        <p className="text-muted-foreground">Manage and process customer orders</p>
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Orders</h1>
+        <p className="text-muted-foreground text-sm sm:text-base">Manage and process customer orders</p>
       </div>
 
+      {/* Make tabs scrollable on small screens */}
       <Tabs defaultValue="all" className="space-y-4">
-        <TabsList>
+        <TabsList className="overflow-x-auto scrollbar-hide space-x-2 sm:space-x-4">
           <TabsTrigger value="all">All ({allOrders?.length || 0})</TabsTrigger>
           <TabsTrigger value="pending">Pending ({pendingOrders.length})</TabsTrigger>
           <TabsTrigger value="confirmed">Confirmed ({confirmedOrders.length})</TabsTrigger>
@@ -157,91 +156,31 @@ export default async function OrdersPage() {
           <TabsTrigger value="delivered">Delivered ({deliveredOrders.length})</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="all" className="space-y-4">
-          {allOrders && allOrders.length > 0 ? (
-            allOrders.map((order: any) => <OrderCard key={order.id} order={order} />)
-          ) : (
-            <Card>
-              <CardContent className="flex flex-col items-center justify-center py-12">
-                <svg
-                  className="h-12 w-12 text-muted-foreground mb-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-                  />
-                </svg>
-                <h3 className="text-lg font-semibold mb-2">No orders yet</h3>
-                <p className="text-sm text-muted-foreground">Orders from buyers will appear here</p>
-              </CardContent>
-            </Card>
-          )}
-        </TabsContent>
-
-        <TabsContent value="pending" className="space-y-4">
-          {pendingOrders.length > 0 ? (
-            pendingOrders.map((order: any) => <OrderCard key={order.id} order={order} />)
-          ) : (
-            <Card>
-              <CardContent className="flex flex-col items-center justify-center py-12">
-                <p className="text-sm text-muted-foreground">No pending orders</p>
-              </CardContent>
-            </Card>
-          )}
-        </TabsContent>
-
-        <TabsContent value="confirmed" className="space-y-4">
-          {confirmedOrders.length > 0 ? (
-            confirmedOrders.map((order: any) => <OrderCard key={order.id} order={order} />)
-          ) : (
-            <Card>
-              <CardContent className="flex flex-col items-center justify-center py-12">
-                <p className="text-sm text-muted-foreground">No confirmed orders</p>
-              </CardContent>
-            </Card>
-          )}
-        </TabsContent>
-
-        <TabsContent value="processing" className="space-y-4">
-          {processingOrders.length > 0 ? (
-            processingOrders.map((order: any) => <OrderCard key={order.id} order={order} />)
-          ) : (
-            <Card>
-              <CardContent className="flex flex-col items-center justify-center py-12">
-                <p className="text-sm text-muted-foreground">No orders in processing</p>
-              </CardContent>
-            </Card>
-          )}
-        </TabsContent>
-
-        <TabsContent value="shipped" className="space-y-4">
-          {shippedOrders.length > 0 ? (
-            shippedOrders.map((order: any) => <OrderCard key={order.id} order={order} />)
-          ) : (
-            <Card>
-              <CardContent className="flex flex-col items-center justify-center py-12">
-                <p className="text-sm text-muted-foreground">No shipped orders</p>
-              </CardContent>
-            </Card>
-          )}
-        </TabsContent>
-
-        <TabsContent value="delivered" className="space-y-4">
-          {deliveredOrders.length > 0 ? (
-            deliveredOrders.map((order: any) => <OrderCard key={order.id} order={order} />)
-          ) : (
-            <Card>
-              <CardContent className="flex flex-col items-center justify-center py-12">
-                <p className="text-sm text-muted-foreground">No delivered orders</p>
-              </CardContent>
-            </Card>
-          )}
-        </TabsContent>
+        {/** Tab Contents */}
+        {[
+          { value: "all", orders: allOrders, emptyMsg: "No orders yet" },
+          { value: "pending", orders: pendingOrders, emptyMsg: "No pending orders" },
+          { value: "confirmed", orders: confirmedOrders, emptyMsg: "No confirmed orders" },
+          { value: "processing", orders: processingOrders, emptyMsg: "No orders in processing" },
+          { value: "shipped", orders: shippedOrders, emptyMsg: "No shipped orders" },
+          { value: "delivered", orders: deliveredOrders, emptyMsg: "No delivered orders" },
+        ].map((tab) => (
+          <TabsContent key={tab.value} value={tab.value} className="space-y-4">
+            {tab.orders && tab.orders.length > 0 ? (
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                {tab.orders.map((order: any) => (
+                  <OrderCard key={order.id} order={order} />
+                ))}
+              </div>
+            ) : (
+              <Card>
+                <CardContent className="flex flex-col items-center justify-center py-12">
+                  <p className="text-sm text-muted-foreground">{tab.emptyMsg}</p>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+        ))}
       </Tabs>
     </div>
   )
