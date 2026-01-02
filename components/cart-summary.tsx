@@ -44,51 +44,66 @@ export function CartSummary({ items, buyer }: CartSummaryProps) {
   const subtotal = items.reduce((sum, item) => sum + item.product.price_per_unit * item.quantity, 0)
 
   const handleCheckout = async () => {
-    if (!deliveryAddress || !deliveryCity) {
-      toast({
-        title: "Missing information",
-        description: "Please provide delivery address and city",
-        variant: "destructive",
-      })
-      return
-    }
+  if (!deliveryAddress || !deliveryCity) {
+    toast({
+      title: "Missing information",
+      description: "Please provide delivery address and city",
+      variant: "destructive",
+    })
+    return
+  }
 
-    setLoading(true)
-    try {
-      const res = await fetch("/api/create-order", {
+  setLoading(true)
+  try {
+    const res = await fetch("/api/create-order", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        items,
+        buyerId: buyer.id,
+        paymentMethod,
+        deliveryAddress,
+        deliveryCity,
+        notes,
+      }),
+    })
+
+    const data = await res.json()
+    if (!res.ok) throw data
+
+    // Assuming the response contains the order and invoice details
+    const { order, invoice } = data
+
+    // Call the API to send the invoice email
+    if (invoice) {
+      await fetch("/api/send-invoice-email", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          items,
-          buyerId: buyer.id,
-          paymentMethod,
-          deliveryAddress,
-          deliveryCity,
-          notes,
+          invoiceId: invoice.id,
+          buyerEmail: buyer.email, // Assuming buyer's email is available
+          invoiceDetails: invoice,
         }),
       })
-
-      const data = await res.json()
-      if (!res.ok) throw data
-
-      toast({
-        title: "Order placed successfully!",
-        description: "Your order has been submitted to the suppliers",
-      })
-
-      router.push("/buyer/dashboard/orders")
-      router.refresh()
-    } catch (error: any) {
-      // console.error("checkout client error", error)
-      toast({
-        title: "Checkout failed",
-        description: error?.message || "An error occurred",
-        variant: "destructive",
-      })
-    } finally {
-      setLoading(false)
     }
+
+    toast({
+      title: "Order placed successfully!",
+      description: "Your order has been submitted to the suppliers",
+    })
+
+    router.push("/buyer/dashboard/orders")
+    router.refresh()
+  } catch (error: any) {
+    toast({
+      title: "Checkout failed",
+      description: error?.message || "An error occurred",
+      variant: "destructive",
+    })
+  } finally {
+    setLoading(false)
   }
+}
 
   return (
     <Card className="sticky top-4">

@@ -4,6 +4,16 @@ import { Button } from "@/components/ui/button"
 import { Plus } from "lucide-react"
 import { ConversationsList } from "@/components/conversations-list"
 import Link from "next/link"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogTrigger,
+  DialogFooter,
+} from "@/components/ui/dialog"
+import { NewMessageDialog } from "@/components/message-dialog"
 
 export default async function BuyerMessagesPage() {
   const supabase = await createServerClient()
@@ -18,10 +28,7 @@ export default async function BuyerMessagesPage() {
 
   // Get buyer profile
   const { data: buyer } = await supabase.from("buyers").select("*").eq("user_id", user.id).single()
-
-  if (!buyer) {
-    return null
-  }
+  if (!buyer) return null
 
   // Get conversations with last message and unread count
   const { data: conversations } = await supabase
@@ -35,23 +42,38 @@ export default async function BuyerMessagesPage() {
     .order("last_message_at", { ascending: false, nullsFirst: false })
     .order("created_at", { ascending: false })
 
+  // Fetch all suppliers to message
+  const { data: suppliers } = await supabase.from("suppliers").select(`
+    id,
+    user_id,
+    business_name,
+    phone,
+    email,
+    country,
+    status,
+    verified,
+    created_at,
+    updated_at
+  `)
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div>
+      <div className="flex items-center justify-between mb-4">
         <div>
-          <h1 className="text-3xl font-bold">Messages</h1>
+          <h1 className="text-2xl font-bold">Messages</h1>
           <p className="text-muted-foreground">Communicate with your suppliers</p>
         </div>
-        <Button asChild>
-          <Link href="/buyer/dashboard/catalog">
-            <Plus className="mr-2 h-4 w-4" />
-            New Message
-          </Link>
-        </Button>
+
+        {/* Dialog with internal client-side form */}
+        <NewMessageDialog suppliers={suppliers ?? []} buyerId={buyer.id} />
       </div>
 
-      <Suspense fallback={<div>Loading messages...</div>}>
-        <ConversationsList conversations={conversations || []} userType="buyer" userId={buyer.id} />
+      <Suspense fallback={<p>Loading messages...</p>}>
+        <ConversationsList
+          conversations={conversations ?? []}
+          userType="buyer"
+          userId={buyer.id}
+        />
       </Suspense>
     </div>
   )

@@ -7,6 +7,9 @@ import { BuyerDashboardNav } from "@/components/buyer-dashboard-nav"
 import { BuyerMobileNav } from "@/components/buyer-mobile-nav"
 import { BuyerDashboardHeader } from "@/components/buyer-dashboard-header"
 import type { Buyer } from "@/lib/types"
+import Link from "next/link"
+import { MessageCircle } from "lucide-react"
+
 
 export default async function BuyerDashboardLayout({
   children,
@@ -61,6 +64,7 @@ export default async function BuyerDashboardLayout({
             </div>
           </div>
           <div className="flex-1 overflow-auto py-4 px-3">
+          
             <BuyerDashboardNav />
           </div>
         </div>
@@ -71,6 +75,16 @@ export default async function BuyerDashboardLayout({
         <BuyerDashboardHeader buyer={buyer} />
         <main className="flex-1 overflow-auto p-4 pb-20 lg:p-6 lg:pb-6">{children}</main>
       </div>
+
+       {/* Floating Message Icon (shown on all dashboard pages) */}
+       <Link
+        href="/buyer/dashboard/messages"
+        className="fixed z-50 bottom-6 right-6 bg-primary text-white p-4 rounded-full shadow-lg hover:bg-primary/90 transition-colors duration-200 flex items-center justify-center"
+        title="Messages"
+        aria-label="Go to messages"
+      >
+        <MessageCircle className="h-6 w-6" />
+      </Link>
 
       {/* Mobile Bottom Navigation */}
       <BuyerMobileNav />
