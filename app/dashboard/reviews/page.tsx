@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Star, TrendingUp, MessageSquare } from "lucide-react"
 import { format } from "date-fns"
+import { redirect } from "next/navigation"
 
 export default async function SupplierReviewsPage() {
   const supabase = await createServerClient()
