@@ -21,9 +21,9 @@ export function ProductGrid({ products, buyerId }: ProductGridProps) {
   const router = useRouter()
   const [loading, setLoading] = useState<string | null>(null)
 
+  // Inside ProductGrid addToCart function
   const addToCart = async (productId: string, minQty: number) => {
     setLoading(productId)
-
     try {
       const supabase = createBrowserClient()
 
@@ -33,18 +33,20 @@ export function ProductGrid({ products, buyerId }: ProductGridProps) {
           product_id: productId,
           quantity: minQty,
         },
-        {
-          onConflict: "buyer_id,product_id",
-        }
+        { onConflict: "buyer_id,product_id" }
       )
 
       if (error) throw error
+
+      // ⚡ DISPATCH EVENT TO HEADER
+      window.dispatchEvent(new Event("cart-updated"))
 
       toast({
         title: "Added to cart",
         description: "Product has been added to your cart",
       })
 
+      // No need to wait for router.refresh() for the count to change anymore!
       router.refresh()
     } catch (error: any) {
       toast({

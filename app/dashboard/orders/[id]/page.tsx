@@ -3,7 +3,12 @@ import { redirect, notFound } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { OrderStatusUpdate } from "@/components/order-status-update"
-import type { Supplier } from "@/lib/types"
+import type { Supplier, Order, Buyer } from "@/lib/types"
+
+// Defining a type that includes the joined buyer data
+interface OrderWithBuyer extends Order {
+  buyer: Buyer | null
+}
 
 export default async function OrderDetailPage({ params }: { params: Promise<{ id: string }> | { id: string } }) {
   const supabase = await createClient()
@@ -18,8 +23,14 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
     redirect("/auth/login")
   }
 
+  const { data: supplier } = await supabase
+    .from("suppliers")
+    .select("*")
+    .eq("user_id", user.id)
+    .single<Supplier>()
+
   const supplierRes = await supabase.from("suppliers").select("*").eq("user_id", user.id).single<Supplier>()
-  const supplier = (supplierRes as any).data
+  // const supplier = (supplierRes as any).data
   const supplierError = (supplierRes as any).error
   const supplierStatus = (supplierRes as any).status
 
@@ -34,24 +45,26 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
   }
 
   // Get order with buyer details
-  const { data: order } = await supabase
-    .from("orders")
-    .select(
-      `
-      *,
-      buyers (
-        business_name,
-        contact_person,
-        phone,
-        email,
-        address,
-        city
-      )
-    `,
+  const { data: order, error: orderError } = await supabase
+  .from("orders")
+  .select(`
+    *,
+    buyer:buyers!buyer_id (
+      business_name,
+      contact_person,
+      phone,
+      email,
+      address,
+      city
     )
-    .eq("id", id)
-    .eq("supplier_id", supplier.id)
-    .single()
+  `)
+  .eq("id", id)
+  .eq("supplier_id", supplier.id)
+  .single();
+
+  // Debugging: If details are still missing, log the error
+if (orderError) console.error("Order Fetch Error:", orderError);
+console.log("Joined Buyer Data:", order?.buyer);
 
   if (!order) {
     notFound()
@@ -131,15 +144,15 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
           <CardContent className="space-y-4">
             <div>
               <p className="text-sm text-muted-foreground">Business Name</p>
-              <p className="font-medium">{order.buyers?.business_name ?? "-"}</p>
+              <p className="font-medium">{order.buyer?.business_name ?? "Not provided"}</p>
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Contact Person</p>
-              <p className="font-medium">{order.buyers?.contact_person ?? "-"}</p>
+              <p className="font-medium">{order.buyer?.contact_person ?? "-"}</p>
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Phone</p>
-              <p className="font-medium">{order.buyers?.phone ?? "-"}</p>
+              <p className="font-medium">{order.buyer?.phone ?? "-"}</p>
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Email</p>

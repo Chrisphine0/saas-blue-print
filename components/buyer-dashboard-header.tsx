@@ -44,6 +44,7 @@ const typeIcons = {
 export function BuyerDashboardHeader({ buyer }: BuyerDashboardHeaderProps) {
   const router = useRouter()
   const [cartItemCount, setCartItemCount] = useState(0)
+  const [isPopping, setIsPopping] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0)
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [loadingNotifications, setLoadingNotifications] = useState(false)
@@ -58,18 +59,25 @@ export function BuyerDashboardHeader({ buyer }: BuyerDashboardHeaderProps) {
     router.refresh()
   }
 
+  // Inside BuyerDashboardHeader component
   useEffect(() => {
     if (!buyerId) return
     const supabase = createClient()
 
-    async function fetchData() {
-      const cartRes = await supabase
+    async function fetchCartCount() {
+      const { count, error } = await supabase
         .from("cart_items")
         .select("*", { count: "exact", head: true })
         .eq("buyer_id", buyerId)
 
-      setCartItemCount((cartRes as any)?.count || 0)
-
+      if (!error) {
+        setCartItemCount(count || 0)
+        // Trigger pop animation when count changes
+        setIsPopping(true)
+        setTimeout(() => setIsPopping(false), 300)
+      }
+    }
+    async function fetchNotifications() {
       setLoadingNotifications(true)
       const userIds = [buyerId, buyerUserId].filter(Boolean)
 
@@ -94,9 +102,42 @@ export function BuyerDashboardHeader({ buyer }: BuyerDashboardHeaderProps) {
       setLoadingNotifications(false)
     }
 
-    fetchData()
-    const t = setInterval(fetchData, 30000)
-    return () => clearInterval(t)
+    // Initial Fetch
+    fetchCartCount()
+    fetchNotifications()
+
+    // This listens to actual changes in the database (Add to cart, Delete from cart)
+  const cartChannel = supabase
+    .channel('cart-changes')
+    .on(
+      'postgres_changes',
+      {
+        event: '*', // Listen for INSERT, UPDATE, and DELETE
+        schema: 'public',
+        table: 'cart_items',
+        filter: `buyer_id=eq.${buyerId}`,
+      },
+      () => {
+        fetchCartCount() // Refresh count whenever database changes
+      }
+    )
+    .subscribe()
+
+    // ⚡ LISTEN FOR LIVE UPDATES
+    const handleLiveUpdate = () => {
+      fetchCartCount() // Update count immediately when event is heard
+    }
+
+    window.addEventListener("cart-updated", handleLiveUpdate)
+
+    // Keep interval for notifications only
+    const t = setInterval(fetchNotifications, 3000)
+
+    return () => {
+      supabase.removeChannel(cartChannel) // Clean up realtime
+    window.removeEventListener("cart-updated", handleLiveUpdate)
+    clearInterval(t)
+    }
   }, [buyerId, buyerUserId])
 
   return (
@@ -124,7 +165,10 @@ export function BuyerDashboardHeader({ buyer }: BuyerDashboardHeaderProps) {
           >
             <ShoppingCart className="h-5 w-5" />
             {cartItemCount > 0 && (
-              <span className="absolute -top-1 -right-1 rounded-full bg-primary px-1.5 text-xs text-primary-foreground">
+              <span
+                className={`absolute -top-1 -right-1 rounded-full bg-primary px-1.5 text-xs text-primary-foreground transition-all ${isPopping ? "animate-badge-pop shadow-lg" : ""
+                  }`}
+              >
                 {cartItemCount}
               </span>
             )}

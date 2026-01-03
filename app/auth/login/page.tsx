@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -10,18 +9,20 @@ import { Label } from "@/components/ui/label"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
+import { useToast } from "@/hooks/use-toast"
+import { Eye, EyeOff } from "lucide-react" // Import icons
 
 export default function LoginPage() {
+  const { toast } = useToast()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [showPassword, setShowPassword] = useState(false) // New state for toggle
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
 
-  // Normalize and set error messages from unknown values
   const setErrorMessage = (err: unknown) => {
-    const message =
-      err instanceof Error ? err.message : typeof err === "string" && err ? err : "An error occurred"
+    const message = err instanceof Error ? err.message : typeof err === "string" && err ? err : "An error occurred"
     setError(message)
   }
 
@@ -32,39 +33,54 @@ export default function LoginPage() {
     setError(null)
 
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
         email,
         password,
       })
 
-      if (error) throw error
+      if (authError) throw authError
 
-      // Prevent buyer accounts from logging in on supplier login page
       try {
-        const { data: buyerProfile, error: buyerError } = await supabase
+        const { data: buyerProfiles, error: buyerError } = await supabase
           .from("buyers")
-          .select("user_id")
-          .eq("user_id", data.user.id)
-          .single()
+          .select("id")
+          .eq("user_id", authData.user.id)
+          .limit(1)
 
-        if (!buyerError && buyerProfile) {
-          // Signed in user has a buyer profile — block supplier login
+        if (buyerProfiles && buyerProfiles.length > 0) {
           await supabase.auth.signOut()
-          setError("This account is registered as a buyer. Please use the buyer login page.")
+          toast({
+            title: "Access Denied",
+            description: "This account is a buyer account.",
+            variant: "destructive",
+          })
+          setError("This account is registered as a buyer.")
           setIsLoading(false)
           return
         }
       } catch (err) {
-        // If the check fails, allow login to proceed but only log in development
         if (process.env.NODE_ENV === "development") {
-          // eslint-disable-next-line no-console
-          console.error("Error checking buyer profile during supplier login:", err)
+          console.error("Error checking buyer profile:", err)
         }
       }
 
-      router.push("/dashboard")
-      router.refresh()
+      toast({
+        title: "Login Successful",
+        description: "Welcome back!",
+      })
+
+      setTimeout(() => {
+        router.push("/dashboard")
+        router.refresh()
+      }, 100)
+
     } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "An error occurred"
+      toast({
+        title: "Login Error",
+        description: message,
+        variant: "destructive",
+      })
       setErrorMessage(error)
     } finally {
       setIsLoading(false)
@@ -78,12 +94,7 @@ export default function LoginPage() {
           <div className="flex flex-col items-center gap-2 text-center">
             <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary">
               <svg className="h-6 w-6 text-primary-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
-                />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
               </svg>
             </div>
             <h1 className="text-xl font-semibold">B2B Ordering Platform</h1>
@@ -91,7 +102,7 @@ export default function LoginPage() {
           </div>
           <Card>
             <CardHeader>
-              <CardTitle className="text-2xl items-center text-center">Login</CardTitle>
+              <CardTitle className="text-2xl text-center">Login</CardTitle>
               <CardDescription>Enter your credentials to access your supplier dashboard</CardDescription>
             </CardHeader>
             <CardContent>
@@ -111,14 +122,24 @@ export default function LoginPage() {
                   </div>
                   <div className="grid gap-2">
                     <Label htmlFor="password">Password</Label>
-                    <Input
-                      id="password"
-                      type="password"
-                      required
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="bg-white/90 border border-slate-200 text-slate-900 placeholder:text-slate-400 dark:bg-[#072235] dark:border-[#0b4066] dark:text-[#d9f1ff]"
-                    />
+                    <div className="relative">
+                      <Input
+                        id="password"
+                        type={showPassword ? "text" : "password"}
+                        required
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="bg-white/90 border border-slate-200 text-slate-900 placeholder:text-slate-400 dark:bg-[#072235] dark:border-[#0b4066] dark:text-[#d9f1ff] pr-10"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+                        aria-label={showPassword ? "Hide password" : "Show password"}
+                      >
+                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                      </button>
+                    </div>
                   </div>
                   {error && <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">{error}</div>}
                   <Button type="submit" className="w-full" disabled={isLoading}>

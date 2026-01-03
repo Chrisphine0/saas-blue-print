@@ -30,6 +30,7 @@ export function OrderStatusUpdate({ order }: OrderStatusUpdateProps) {
 
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (isLoading) return // Prevent double clicks
     setIsLoading(true)
     setError(null)
 
@@ -56,7 +57,13 @@ export function OrderStatusUpdate({ order }: OrderStatusUpdateProps) {
       })
 
       const data = await res.json()
-      if (!res.ok) throw data
+      if (!res.ok) {
+        // If the error is the duplicate tracking number, give a better message
+        if (data.error?.code === "23505") {
+          throw new Error("A delivery record for this order already exists.")
+        }
+        throw new Error(data.message || "Failed to update order")
+      }
 
       router.refresh()
     } catch (error: unknown) {

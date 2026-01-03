@@ -123,3 +123,13 @@
     @apply bg-background text-foreground;
   }
 }
+
+@keyframes badge-pop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.4); }
+  100% { transform: scale(1); }
+}
+
+.animate-badge-pop {
+  animation: badge-pop 0.3s ease-out;
+}

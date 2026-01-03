@@ -104,7 +104,7 @@ export function DashboardHeader({ supplier }: DashboardHeaderProps) {
   }
 
   return (
-    <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background px-6">
+    <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background px-6 print:hidden">
       <div className="flex flex-1 items-center gap-4">
         <h2 className="text-lg font-semibold">{supplier?.business_name || "Supplier Dashboard"}</h2>
       </div>
@@ -213,8 +213,8 @@ export function DashboardHeader({ supplier }: DashboardHeaderProps) {
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => router.push("/settings/profile")}>Profile Settings</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => router.push("/settings/business")}>Business Details</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => router.push("/dashboard/settings/profile")}>Profile Settings</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => router.push("/dashboard/settings/business")}>Business Details</DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleLogout} className="text-destructive">
               Logout

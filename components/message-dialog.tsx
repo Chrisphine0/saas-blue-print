@@ -18,6 +18,7 @@ import type { Supplier } from "@/lib/types" // Ensure correct import path
 interface NewMessageDialogProps {
   suppliers: Supplier[]
   buyerId: string
+  orderId?: string // New optional prop
 }
 
 export function NewMessageDialog({ suppliers, buyerId }: NewMessageDialogProps) {
@@ -40,14 +41,18 @@ export function NewMessageDialog({ suppliers, buyerId }: NewMessageDialogProps) 
     setLoading(true)
     try {
       const res = await fetch("/api/messages/new", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          buyer_id: buyerId,
-          supplier_id: selectedSupplier,
-          message,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+  buyer_id: buyerId,
+  supplier_id: selectedSupplier,
+  message,
+  order_id: orderId || null, // Pass it to the API
         }),
       })
+
+      const result = await res.json()
+
       if (!res.ok) {
         setError("Could not send message.")
         return
@@ -56,6 +61,8 @@ export function NewMessageDialog({ suppliers, buyerId }: NewMessageDialogProps) 
       setMessage("")
       setSelectedSupplier("")
       router.refresh() // reload page/conversations
+      } catch (err: any) {
+    setError("Network error. Please try again.")
     } finally {
       setLoading(false)
     }

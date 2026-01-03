@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { createBrowserClient } from "@/lib/supabase/client"
@@ -10,11 +9,14 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
 import { validatePassword } from "@/lib/validatePassword"
+import { Eye, EyeOff, Building2, User, Mail, Phone, MapPin } from "lucide-react"
 
 export function BuyerSignupForm() {
   const router = useRouter()
   const { toast } = useToast()
+  
   const [loading, setLoading] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -27,18 +29,39 @@ export function BuyerSignupForm() {
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault()
-    const { valid, error } = validatePassword(formData.password)
+    
+    // 1. Password Validation
+    const { valid, error: pwError } = validatePassword(formData.password)
     if (!valid) {
-      toast({ title: "Signup failed", description: error, variant: "destructive" })
+      toast({ title: "Signup failed", description: pwError, variant: "destructive" })
       return
     }
-    
+
     setLoading(true)
 
     try {
       const supabase = createBrowserClient()
 
-      // Create auth user
+      // 2. 🛡️ Manual Pre-check: Prevent Cross-Role Registration
+      // This checks if the email is already used in either table before calling Auth
+      const [{ data: existingBuyer }, { data: existingSupplier }] = await Promise.all([
+        supabase.from("buyers").select("email").eq("email", formData.email).maybeSingle(),
+        supabase.from("suppliers").select("email").eq("email", formData.email).maybeSingle()
+      ])
+
+      if (existingBuyer || existingSupplier) {
+        toast({
+          title: "Account Conflict",
+          description: existingSupplier 
+            ? "This email is already registered as a Supplier. Please use a different email." 
+            : "An account with this email already exists.",
+          variant: "destructive"
+        })
+        setLoading(false)
+        return
+      }
+
+      // 3. Create Auth User
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
@@ -49,13 +72,9 @@ export function BuyerSignupForm() {
       })
 
       if (authError) throw authError
+      if (!authData.user) throw new Error("Failed to create user")
 
-      if (!authData.user) {
-        throw new Error("Failed to create user")
-      }
-
-      // Create buyer profile on the server (service role) because signUp
-      // may not return an authenticated session immediately (email confirmation).
+      // 4. Create Buyer Profile via API
       const createRes = await fetch("/api/create-buyer", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -72,24 +91,9 @@ export function BuyerSignupForm() {
       })
 
       if (!createRes.ok) {
-        let errBody: any
-        try {
-          errBody = await createRes.json()
-        } catch (e) {
-          errBody = await createRes.text()
-        }
-        console.error("Create-buyer API error:", createRes.status, errBody)
-        
-        // Create a proper error object with status and code
-        const apiError: any = new Error(
-          errBody?.error?.message || 
-          errBody?.message || 
-          errBody?.error || 
-          "Failed to create buyer profile"
-        )
-        apiError.status = createRes.status
-        apiError.code = errBody?.error?.code || errBody?.code
-        apiError.details = errBody?.error?.details || errBody?.details
+        const errData = await createRes.json().catch(() => ({}))
+        const apiError: any = new Error(errData.error?.message || errData.message || "Failed to create profile")
+        apiError.code = errData.error?.code || errData.code
         throw apiError
       }
 
@@ -99,77 +103,29 @@ export function BuyerSignupForm() {
       })
 
       router.push("/buyer/auth/signup-success")
+
     } catch (error: any) {
+      console.error("Signup error:", error)
       const errorMsg = error?.message?.toLowerCase?.() ?? ""
-      const errorCode = error?.code ?? error?.error?.code ?? null
-      const errorDetails = error?.details?.toLowerCase?.() ?? ""
-      const status = error?.status
+      const errorCode = error?.code ?? null;
 
-      console.error("Signup error details:", { error, errorCode, status, errorMsg, errorDetails })
-
-      // Handle foreign key constraint violations (user not verified or doesn't exist in auth.users)
-      if (
-        errorCode === "23503" ||
-        errorMsg.includes("violates foreign key constraint") ||
-        errorMsg.includes("foreign key violation") ||
-        errorDetails.includes("not present in table")
-      ) {
+      // Handling Trigger Exceptions (P0001 is custom PostgreSQL code)
+      if (errorCode === "P0001" || errorMsg.includes("supplier table")) {
         toast({
-          title: "Account verification issue",
-          description: "There was an issue creating your profile. Please check your email for a verification link and try again after verifying.",
+          title: "Account Role Conflict",
+          description: "This email is registered to a Supplier account. Please use a different email.",
           variant: "destructive",
         })
-      }
-      // Handle 409 Conflict errors (duplicate email or other conflicts)
-      else if (status === 409) {
+      } else if (errorMsg.includes("already registered") || errorMsg.includes("already exists")) {
         toast({
-          title: "Email already in use",
-          description: "An account with this email already exists. Please log in or use a different email.",
+          title: "Email in use",
+          description: "An account with this email already exists. Try logging in.",
           variant: "destructive",
         })
-      }
-      // Handle duplicate user registration from Supabase Auth
-      else if (
-        errorMsg.includes("user already registered") ||
-        errorMsg.includes("already registered") ||
-        errorMsg.includes("duplicate key value") ||
-        errorMsg.includes("already exists")
-      ) {
-        toast({
-          title: "Email already in use",
-          description: "An account with this email already exists. Please log in or use a different email.",
-          variant: "destructive",
-        })
-      }
-      // Handle weak password errors
-      else if (errorMsg.includes("password") && (errorMsg.includes("weak") || errorMsg.includes("short"))) {
-        toast({
-          title: "Weak password",
-          description: "Please choose a stronger password with at least 6 characters.",
-          variant: "destructive",
-        })
-      }
-      // Handle invalid email format
-      else if (errorMsg.includes("invalid") && errorMsg.includes("email")) {
-        toast({
-          title: "Invalid email",
-          description: "Please enter a valid email address.",
-          variant: "destructive",
-        })
-      }
-      // Handle network errors
-      else if (errorMsg.includes("fetch") || errorMsg.includes("network")) {
-        toast({
-          title: "Connection error",
-          description: "Please check your internet connection and try again.",
-          variant: "destructive",
-        })
-      }
-      // Generic fallback for all other errors
-      else {
+      } else {
         toast({
           title: "Signup failed",
-          description: error.message || "An unexpected error occurred. Please try again.",
+          description: error.message || "An unexpected error occurred.",
           variant: "destructive",
         })
       }
@@ -180,80 +136,128 @@ export function BuyerSignupForm() {
 
   return (
     <form onSubmit={handleSignup} className="space-y-4">
-      <div className="grid grid-cols-2 gap-4">
+      {/* Business & Contact Section */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="businessName">Business Name</Label>
-          <Input
-            id="businessName"
-            value={formData.businessName}
-            onChange={(e) => setFormData({ ...formData, businessName: e.target.value })}
-            required
-          />
+          <div className="relative">
+            <Building2 className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+            <Input
+              id="businessName"
+              className="pl-10"
+              placeholder="Company Name"
+              value={formData.businessName}
+              onChange={(e) => setFormData({ ...formData, businessName: e.target.value })}
+              required
+            />
+          </div>
         </div>
-
         <div className="space-y-2">
           <Label htmlFor="contactPerson">Contact Person</Label>
+          <div className="relative">
+            <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+            <Input
+              id="contactPerson"
+              className="pl-10"
+              placeholder="John Doe"
+              value={formData.contactPerson}
+              onChange={(e) => setFormData({ ...formData, contactPerson: e.target.value })}
+              required
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Email Field */}
+      <div className="space-y-2">
+        <Label htmlFor="email">Email Address</Label>
+        <div className="relative">
+          <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
           <Input
-            id="contactPerson"
-            value={formData.contactPerson}
-            onChange={(e) => setFormData({ ...formData, contactPerson: e.target.value })}
+            id="email"
+            type="email"
+            className="pl-10"
+            placeholder="name@company.com"
+            value={formData.email}
+            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
             required
           />
         </div>
       </div>
 
+      {/* Phone Field */}
       <div className="space-y-2">
-        <Label htmlFor="email">Email</Label>
-        <Input
-          id="email"
-          type="email"
-          value={formData.email}
-          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-          required
-        />
+        <Label htmlFor="phone">Phone Number</Label>
+        <div className="relative">
+          <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+          <Input
+            id="phone"
+            type="tel"
+            className="pl-10"
+            placeholder="+254..."
+            value={formData.phone}
+            onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+            required
+          />
+        </div>
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="phone">Phone</Label>
-        <Input
-          id="phone"
-          type="tel"
-          value={formData.phone}
-          onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-          required
-        />
-      </div>
-
+      {/* Password Field with Toggle */}
       <div className="space-y-2">
         <Label htmlFor="password">Password</Label>
-        <Input
-          id="password"
-          type="password"
-          value={formData.password}
-          onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-          required
-          minLength={6}
-        />
+        <div className="relative">
+          <Input
+            id="password"
+            type={showPassword ? "text" : "password"}
+            className="pr-10"
+            placeholder="••••••••"
+            value={formData.password}
+            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+            required
+            minLength={6}
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword(!showPassword)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+          >
+            {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+          </button>
+        </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      {/* Location Section */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="city">City</Label>
-          <Input id="city" value={formData.city} onChange={(e) => setFormData({ ...formData, city: e.target.value })} />
+          <div className="relative">
+            {/* <City className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" /> */}
+            <Input 
+              id="city" 
+              className="pl-10"
+              placeholder="City"
+              value={formData.city} 
+              onChange={(e) => setFormData({ ...formData, city: e.target.value })} 
+            />
+          </div>
         </div>
-
         <div className="space-y-2">
           <Label htmlFor="address">Address</Label>
-          <Input
-            id="address"
-            value={formData.address}
-            onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-          />
+          <div className="relative">
+            <MapPin className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+            <Input
+              id="address"
+              className="pl-10"
+              placeholder="Physical Address"
+              value={formData.address}
+              onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+            />
+          </div>
         </div>
       </div>
 
       <Button type="submit" className="w-full" disabled={loading}>
-        {loading ? "Creating Account..." : "Create Account"}
+        {loading ? "Creating Account..." : "Create Buyer Account"}
       </Button>
     </form>
   )
