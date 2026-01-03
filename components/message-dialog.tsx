@@ -21,7 +21,8 @@ interface NewMessageDialogProps {
   orderId?: string // New optional prop
 }
 
-export function NewMessageDialog({ suppliers, buyerId }: NewMessageDialogProps) {
+// FIX: Added orderId to the destructured props below
+export function NewMessageDialog({ suppliers, buyerId, orderId }: NewMessageDialogProps) {
   const [open, setOpen] = React.useState(false)
   const [selectedSupplier, setSelectedSupplier] = React.useState("")
   const [message, setMessage] = React.useState("")
@@ -34,36 +35,40 @@ export function NewMessageDialog({ suppliers, buyerId }: NewMessageDialogProps) 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault()
     setError("")
+    
     if (!selectedSupplier || !message.trim()) {
       setError("Please select a supplier and enter a message.")
       return
     }
+
     setLoading(true)
+    
     try {
-      // const res = await fetch("/api/messages/new", {
-      const res = await fetch("", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-  buyer_id: buyerId,
-  supplier_id: selectedSupplier,
-  message,
-  order_id: orderId || null, // Pass it to the API
+      // Ensure the endpoint URL is correct (e.g., /api/messages/new)
+      const res = await fetch("/api/messages/new", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          buyer_id: buyerId,
+          supplier_id: selectedSupplier,
+          message,
+          order_id: orderId || null, // Now 'orderId' is correctly recognized
         }),
       })
 
-      const result = await res.json()
-
       if (!res.ok) {
-        setError("Could not send message.")
+        const errorData = await res.json().catch(() => ({}))
+        setError(errorData.message || "Could not send message.")
         return
       }
+
+      // Success cleanup
       setOpen(false)
       setMessage("")
       setSelectedSupplier("")
       router.refresh() // reload page/conversations
-      } catch (err: any) {
-    setError("Network error. Please try again.")
+    } catch (err: any) {
+      setError("Network error. Please try again.")
     } finally {
       setLoading(false)
     }
@@ -85,9 +90,9 @@ export function NewMessageDialog({ suppliers, buyerId }: NewMessageDialogProps) 
           </DialogHeader>
           <div className="my-4 space-y-3">
             <label className="block">
-              <div className="mb-1 font-semibold">Supplier</div>
+              <div className="mb-1 font-semibold text-sm text-gray-700">Supplier</div>
               <select
-                className="w-full border px-3 py-2 rounded"
+                className="w-full border px-3 py-2 rounded-md bg-background"
                 value={selectedSupplier}
                 onChange={(e) => setSelectedSupplier(e.target.value)}
                 required
@@ -102,10 +107,10 @@ export function NewMessageDialog({ suppliers, buyerId }: NewMessageDialogProps) 
               </select>
             </label>
             <label className="block">
-              <div className="mb-1 font-semibold">Message</div>
+              <div className="mb-1 font-semibold text-sm text-gray-700">Message</div>
               <textarea
-                className="w-full border px-3 py-2 rounded"
-                rows={3}
+                className="w-full border px-3 py-2 rounded-md bg-background"
+                rows={4}
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 placeholder="Type your message here..."
@@ -113,11 +118,19 @@ export function NewMessageDialog({ suppliers, buyerId }: NewMessageDialogProps) 
                 disabled={loading}
               />
             </label>
-            {error && <p className="text-sm text-red-500">{error}</p>}
+            {error && <p className="text-sm text-red-500 font-medium">{error}</p>}
           </div>
           <DialogFooter>
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => setOpen(false)} 
+              disabled={loading}
+            >
+              Cancel
+            </Button>
             <Button type="submit" disabled={loading}>
-              {loading ? "Sending..." : "Send"}
+              {loading ? "Sending..." : "Send Message"}
             </Button>
           </DialogFooter>
         </form>

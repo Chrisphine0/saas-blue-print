@@ -46,27 +46,34 @@ export function DashboardHeader({ supplier }: DashboardHeaderProps) {
   }
 
   useEffect(() => {
+    // 1. Check if supplier exists
     if (!supplier) return
+    
+    // 2. Create local constants to satisfy TypeScript closures
+    const currentSupplier = supplier;
     const supabase = createClient()
 
     async function fetchUnreadAndList() {
       setLoadingNotifications(true)
-      const userIds = [supplier.id, supplier.user_id].filter(Boolean)
+      
+      // Use the local constant which TS knows is not null here
+      const userIds = [currentSupplier.id, currentSupplier.user_id].filter(Boolean) as string[]
+      
       const unreadRes = await supabase
         .from("notifications")
         .select("*", { count: "exact", head: true })
         .eq("user_type", "supplier")
-        .in("user_id", userIds as string[])
+        .in("user_id", userIds)
         .eq("type", "order")
         .eq("is_read", false)
 
-      setUnreadOrders((unreadRes as any).count || 0)
+      setUnreadOrders(unreadRes.count || 0)
 
       const listRes = await supabase
         .from("notifications")
         .select("*")
         .eq("user_type", "supplier")
-        .in("user_id", userIds as string[])
+        .in("user_id", userIds)
         .order("created_at", { ascending: false })
         .limit(6)
 
@@ -109,7 +116,6 @@ export function DashboardHeader({ supplier }: DashboardHeaderProps) {
         <h2 className="text-lg font-semibold">{supplier?.business_name || "Supplier Dashboard"}</h2>
       </div>
       <div className="flex items-center gap-4 relative">
-        {/* Notifications bell as dropdown — uses same Card/Badge styling as notifications page */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="relative" aria-label="Notifications">
@@ -196,7 +202,6 @@ export function DashboardHeader({ supplier }: DashboardHeaderProps) {
           </DropdownMenuContent>
         </DropdownMenu>
 
-        {/* Profile menu */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="rounded-full">
