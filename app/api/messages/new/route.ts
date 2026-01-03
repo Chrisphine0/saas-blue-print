@@ -46,7 +46,8 @@ export async function POST(req: Request) {
     const { error: msgError } = await supabase
       .from("messages")
       .insert({
-        conversation_id: conversation.id,
+        // conversation_id: conversation.id,
+         conversation_id: "01",
         sender_type: "buyer",
         sender_id: buyer_id,
         message: message.trim(),
