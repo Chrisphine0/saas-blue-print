@@ -1,5 +1,5 @@
 import { createServerClient } from "@/lib/supabase/server"
-import { notFound } from "next/navigation"
+import { notFound, redirect } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
