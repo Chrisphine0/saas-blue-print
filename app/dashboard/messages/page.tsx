@@ -1,6 +1,7 @@
 import { Suspense } from "react"
 import { createServerClient } from "@/lib/supabase/server"
 import { ConversationsList } from "@/components/conversations-list"
+import { redirect } from "next/navigation"
 
 export default async function SupplierMessagesPage() {
   const supabase = await createServerClient()
